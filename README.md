@@ -19,7 +19,7 @@ Nodejs v16 or higher.
 
 Understanding Pathing
 
-```js
+```diff
 / = Root directory.
 . = This location.
 .. = Up a directory.
