@@ -453,7 +453,10 @@ client.on("ready", async () => {
   for (let user of users) {
     client.userSettings.set(user.Id, user);
   }
+
+  require('../handlers/premium')(client)
 });
+
 ```
 
 Awesome. We are one step away!
