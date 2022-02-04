@@ -315,6 +315,84 @@ module.exports = new Command({
 });
 ```
 
+if you want to make premium users list command follow this code
+
+```js
+const { Command } = require("reconlx");
+const ee = require("../../settings/embed.json");
+const config = require("../../settings/config.json");
+const User = require("../../Models/User");
+const { Collection, MessageEmbed } = require("discord.js");
+
+module.exports = new Command({
+  // options
+  name: "premiumlist",
+  description: `get list of all preimium user`,
+  userPermissions: [],
+  category: "Premium",
+  // command start
+  run: async ({ client, interaction, args }) => {
+    // Code
+    let data = client.userSettings
+      .filter((data) => data.isPremium === true)
+      .map((data, index) => {
+        return ` <@${data.Id}> Expire At :- \`${msToTime(
+          data.premium.expiresAt
+        )}\` Plan :- \`${data.premium.plan}\` `;
+      });
+    interaction.followUp({
+      embeds: [
+        new MessageEmbed().setDescription(
+          data.join("\n") || "No Premium User Found"
+        ),
+      ],
+    });
+  },
+});
+```
+
+if you want to remove a user from premium list follow this code
+
+```js
+const { Command } = require("reconlx");
+const ee = require("../../settings/embed.json");
+const config = require("../../settings/config.json");
+const moment = require("moment");
+const schema = require("../../Models/code");
+const User = require("../../Models/User");
+
+module.exports = new Command({
+  // options
+  name: "rempremium",
+  description: `remove preium from user`,
+  userPermissions: [],
+  category: "Premium",
+  options: [
+    {
+      name: "user",
+      description: `mention a premium user`,
+      type: "USER",
+      required: true,
+    },
+  ],
+  // command start
+  run: async ({ client, interaction, args }) => {
+    // Code
+    let user = interaction.options.getUser("user");
+    let data = client.userSettings.get(user.id);
+    if (!data.isPremium) {
+      return interaction.followUp(`${user} is Not a Premium User`);
+    } else {
+      await User.findOneAndRemove({ Id: user.id });
+      await client.userSettings.delete(user.id);
+      interaction.followUp(`${user} Removed From Premium`);
+    }
+  },
+});
+
+```
+
+
 Perfect. But as you can see, we have a Collection called `userSettings` within our Code.
 Lets add it real quick to our Project before we are trying out our new Commands.
 
