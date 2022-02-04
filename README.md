@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://discord.gg/3eNaWPhWZE" target="blank"><img src="https://cdn.discordapp.com/attachments/881491251784978452/925487363017277510/djs.png" width="200" height="200" alt="Djs" /></a>
+  <a href="https://discord.gg/PcUVWApWN3" target="blank"><img src="https://cdn.discordapp.com/attachments/881491251784978452/925487363017277510/djs.png" width="200" height="200" alt="Djs" /></a>
 </p>
 
 # Premium.djs
@@ -421,14 +421,14 @@ AAAAND BOOM. We are done. You have successfully setup your own Premium System fo
 Go ahead and start your Bot. Once online, run `/gencode daily`.
 
 <p align="center">
-  <a href="https://discord.gg/3eNaWPhWZE" target="blank"><img src="https://media.discordapp.net/attachments/877230407114973264/925504074181402624/unknown.png" width="700" height="300" alt="Generate Code" /></a>
+  <a href="https://discord.gg/PcUVWApWN3" target="blank"><img src="https://media.discordapp.net/attachments/936140005900947466/939186232909496394/gencode.png" width="700" height="300" alt="Generate Code" /></a>
 </p>
 
 This will create a premium code that expires in exactly 24hours.
 Redeem the Code with `/redeem <code>`. :)
 
 <p align="center">
-  <a href="https://discord.gg/3eNaWPhWZE" target="blank"><img src="https://cdn.discordapp.com/attachments/877230407114973264/925505093049147442/unknown.png" width="700" height="300" alt="Redeem Code" /></a>
+  <a href="https://discord.gg/PcUVWApWN3" target="blank"><img src="https://media.discordapp.net/attachments/936140005900947466/939186233144385536/redeem.png" width="700" height="300" alt="Redeem Code" /></a>
 </p>
 
 You might wonder, how you can strict a command down to only premium Users.
@@ -454,7 +454,6 @@ module.exports = new Command({
     });
   },
 });
-
 ```
 
 Congrats. You now have a fully working premium system integrated.
