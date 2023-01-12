@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://discord.gg/PcUVWApWN3" target="blank"><img src="https://cdn.discordapp.com/attachments/881491251784978452/925487363017277510/djs.png" width="200" height="200" alt="Djs" /></a>
+  <a href="https://discord.gg/PcUVWApWN3" target="blank"><img src="https://media.discordapp.net/attachments/1007230019371802654/1063090222725857371/premium.png" alt="Djs" /></a>
 </p>
 
 # Premium.djs
@@ -49,29 +49,29 @@ In there, create a file called `code.js`.
 We now want Mongoose to store the Data we generate.
 
 ```js
-const mongoose = require("mongoose");
+const { Schema, model } = require("mongoose");
 
-// Generate Premium Code
-const premiumCode = mongoose.Schema({
-  code: {
-    type: mongoose.SchemaTypes.String,
-    default: null,
-  },
+module.exports = model(
+  "premium-codes",
+  new Schema({
+    code: {
+      type: String,
+      default: null,
+    },
 
-  // Set the expire date and time. <Day, Week, Month, Year>
-  expiresAt: {
-    type: mongoose.SchemaTypes.Number,
-    default: null,
-  },
+    // Set the expire date and time. <Day, Week, Month, Year>
+    expiresAt: {
+      type: Number,
+      default: null,
+    },
 
-  // Set the plan <Day, Week, Month>.
-  plan: {
-    type: mongoose.SchemaTypes.String,
-    default: null,
-  },
-});
-
-module.exports = mongoose.model("premium-codes", premiumCode);
+    // Set the plan <Day, Week, Month>.
+    plan: {
+      type: String,
+      default: null,
+    },
+  })
+);
 ```
 
 Great. Now we want to do the same for our Users/Members.
@@ -79,43 +79,43 @@ Create a file called `User.js` in the same Folder.
 The path would look like this: `src/Models/User.js`
 
 ```js
-const mongoose = require("mongoose");
+const { Schema, model } = require("mongoose");
 
-// The heart of the User, here is everything saved that the User does.
-// Such as Levels, Courses, Premium, Enrolled, XP, Leaderboard.
-const user = mongoose.Schema({
-  Id: {
-    type: mongoose.SchemaTypes.String,
-    required: true,
-    unique: true,
-  },
-  isPremium: {
-    type: mongoose.SchemaTypes.Boolean,
-    default: false,
-  },
-  premium: {
-    redeemedBy: {
-      type: mongoose.SchemaTypes.Array,
-      default: null,
+module.exports = model(
+  "premium-user",
+  new Schema({
+    Id: {
+      type: String,
+      required: true,
+      unique: true,
     },
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+    premium: {
+      redeemedBy: {
+        type: Array,
+        default: null,
+      },
 
-    redeemedAt: {
-      type: mongoose.SchemaTypes.Number,
-      default: null,
-    },
+      redeemedAt: {
+        type: Number,
+        default: null,
+      },
 
-    expiresAt: {
-      type: mongoose.SchemaTypes.Number,
-      default: null,
-    },
+      expiresAt: {
+        type: Number,
+        default: null,
+      },
 
-    plan: {
-      type: mongoose.SchemaTypes.String,
-      default: null,
+      plan: {
+        type: String,
+        default: null,
+      },
     },
-  },
-});
-module.exports = mongoose.model("user", user);
+  })
+);
 ```
 
 Cool.
@@ -125,84 +125,55 @@ Go ahead and create a file called `generate.js` within your commands folder.
 The path would look something like this: `src/commands/subfolder/generate.js`
 
 ```js
-const { Command } = require("reconlx");
-const ee = require("../../settings/embed.json");
-const config = require("../../settings/config.json");
+const {
+  Message,
+  PermissionFlagsBits,
+  Client,
+  EmbedBuilder,
+} = require("discord.js");
 const moment = require("moment");
 const voucher_codes = require("voucher-code-generator");
-const schema = require("../../Models/code");
+const schema = require("../../../Models/Code");
 
-module.exports = new Command({
-  // options
+module.exports = {
   name: "gencode",
-  description: `gen premium codes`,
-  userPermissions: [],
-  category: "Premium",
-  options: [
-    {
-      name: "plan",
-      description: `choose your plan`,
-      type: "STRING",
-      required: true,
-      choices: [
-        {
-          name: "daily",
-          value: "daily",
-        },
-        {
-          name: "weekly",
-          value: "weekly",
-        },
-        {
-          name: "monthly",
-          value: "monthly",
-        },
-        {
-          name: "yearly",
-          value: "yearly",
-        },
-      ],
-    },
-    {
-      name: "amount",
-      description: `amount of codes`,
-      type: "NUMBER",
-      required: false,
-    },
-  ],
-  // command start
-  run: async ({ client, interaction, args }) => {
+  description: `generate premium codes`,
+  userPermissions: PermissionFlagsBits.SendMessages,
+  botPermissions: PermissionFlagsBits.SendMessages,
+  category: "Owner",
+  /**
+   *
+   * @param {Client} client
+   * @param {Message} message
+   * @param {String[]} args
+   * @param {String} prefix
+   */
+  run: async (client, message, args, prefix) => {
     // Code
-    // As defined in the Schema, leave codes as an empty array variable
-    let codes = [];
-
-    // Display available plans of the code
-    const plan = interaction.options.getString("plan");
-
-    // Calculate time for the code to expire.
+    if (message.author.id !== "Owner_ID") return;
+    const plans = ["daily", "weekly", "monthly", "yearly"];
+    const plan = args[0];
+    const amount = args[1] || 1;
+    const codes = [];
     let time;
+    if (!plans.includes(plan)) {
+      return message.reply(`Avalible Plans :: \n > \`${plans.join(", ")}\``);
+    }
     if (plan === "daily") time = Date.now() + 86400000;
     if (plan === "weekly") time = Date.now() + 86400000 * 7;
     if (plan === "monthly") time = Date.now() + 86400000 * 30;
     if (plan === "yearly") time = Date.now() + 86400000 * 365;
 
-    // If the input is for ex. 10, generate 10 Codes. Default => 1 Code / Command.
-    let amount = interaction.options.getNumber("amount");
-    if (!amount) amount = 1;
-
-    for (var i = 0; i < amount; i++) {
+    for (let i = 0; i < amount; i++) {
       const codePremium = voucher_codes.generate({
         pattern: "####-####-####",
       });
-
       // Save the Code as a String ("ABCDEF ...") in the Database
       const code = codePremium.toString().toUpperCase();
-
       // Security check, check if the code exists in the database.
       const find = await schema.findOne({
         code: code,
       });
-
       // If it does not exist, create it in the database.
       if (!find) {
         schema.create({
@@ -210,22 +181,38 @@ module.exports = new Command({
           plan: plan,
           expiresAt: time,
         });
-
         // Push the new generated Code into the Queue
         codes.push(`${i + 1}- ${code}`);
       }
     }
-
-    // Lastly, we want to send the new Code(s) into the Channel.
-    interaction.followUp({
-      content: `\`\`\`Generated +${codes.length}\n\n--------\n${codes.join(
-        "\n"
-      )}\n--------\n\nType - ${plan}\nExpires - ${moment(time).format(
-        "dddd, MMMM Do YYYY"
-      )}\`\`\`\nTo redeem, use \`/redeem <code>\``,
+    // message.reply({
+    //   content: `\`\`\`Generated +${codes.length}\n\n--------\n${codes.join(
+    //     "\n"
+    //   )}\n--------\n\nType - ${plan}\nExpires - ${moment(time).format(
+    //     "dddd, MMMM Do YYYY"
+    //   )}\`\`\`\nTo redeem, use \`${prefix}redeem <code>\``,
+    // });
+    message.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor("Blurple")
+          .setTitle(`Generated ${codes.length} Codes`)
+          .setDescription(
+            `\`\`\`\n${codes.join("\n") || "No Codes Generated"} \`\`\``
+          )
+          .addFields([
+            {
+              name: `Expire At`,
+              value: `<t:${Math.floor(time / 1000)}:F>`,
+            },
+          ])
+          .setFooter({
+            text: `To redeem, use ${prefix}redeem <code>`,
+          }),
+      ],
     });
   },
-});
+};
 ```
 
 Perfect. Now our Bot is generating the Codes.
@@ -235,168 +222,178 @@ Go ahead and create a file within your `commands` folder called `redeem.js`
 The path would look like this: `src/commands/subfolder/redeem.js`
 
 ```js
-const { Command } = require("reconlx");
-const ee = require("../../settings/embed.json");
-const config = require("../../settings/config.json");
+const { Message, PermissionFlagsBits, Client } = require("discord.js");
 const moment = require("moment");
-const schema = require("../../Models/code");
-const User = require("../../Models/User");
+const Code = require("../../../Models/Code");
+const User = require("../../../Models/User");
 
-module.exports = new Command({
-  // options
+module.exports = {
   name: "redeem",
-  description: `redeem preium code`,
-  userPermissions: [],
-  category: "Premium",
-  options: [
-    {
-      name: "code",
-      description: `give me code`,
-      type: "STRING",
-      required: true,
-    },
-  ],
-  // command start
-  run: async ({ client, interaction, args }) => {
+  description: `redeem premium codes`,
+  userPermissions: PermissionFlagsBits.SendMessages,
+  botPermissions: PermissionFlagsBits.SendMessages,
+  category: "Misc",
+  cooldown: 5,
+  /**
+   *
+   * @param {Client} client
+   * @param {Message} message
+   * @param {String[]} args
+   * @param {String} prefix
+   */
+  run: async (client, message, args, prefix) => {
     // Code
-    // Check if the user with a unique ID is in our database.
+    let code = args.join(" "); // `!redeem ABCD-EFGH-IJKL`
     let user = await User.findOne({
-      Id: interaction.user.id, // if you are using slash commands, swap message with interaction.
+      Id: message.author.id, // if you are using slash commands, swap message with interaction.
     });
-
-    // Check Users input for a valid code. Like `!redeem ABCD-EFGH-IJKL`
-    let code = interaction.options.getString("code");
-
     // Return an error if the User does not include any Premium Code
     if (!code) {
-      interaction.followUp(`**Please specify the code you want to redeem!**`);
-    }
-
-    // If the user is already a premium user, we dont want to save that so we return it.
-    if (user && user.isPremium) {
-      return interaction.followUp(`**> You already are a premium user**`);
-    }
-
-    // Check if the code is valid within the database
-    const premium = await schema.findOne({
-      code: code.toUpperCase(),
-    });
-
-    // Set the expire date for the premium code
-    if (premium) {
-      const expires = moment(premium.expiresAt).format(
-        "dddd, MMMM Do YYYY HH:mm:ss"
-      );
-
-      // Once the code is expired, we delete it from the database and from the users profile
-      user.isPremium = true;
-      user.premium.redeemedBy.push(interaction.user);
-      user.premium.redeemedAt = Date.now();
-      user.premium.expiresAt = premium.expiresAt;
-      user.premium.plan = premium.plan;
-
-      // Save the User within the Database
-      user = await user.save({ new: true }).catch(() => {});
-      client.userSettings.set(interaction.user.id, user);
-      await premium.deleteOne().catch(() => {});
-
-      // Send a success message once redeemed
-      interaction.followUp(
-        `**You have successfully redeemed premium!**\n\n\`Expires at: ${expires}\``
-      );
-
-      // Error message if the code is not valid.
+      return message.reply({
+        content: `**Please specify the code you want to redeem!**`,
+      });
+    } else if (user && user?.isPremium) {
+      // If the user is already a premium user, we dont want to save that so we return it.
+      return message.reply({
+        content: `**> You already are a premium user**`,
+      });
     } else {
-      return interaction.followUp(
-        `**The code is invalid. Please try again using valid one!**`
-      );
+      // Check if the code is valid within the database
+      const premium = await Code.findOne({
+        code: code.toUpperCase(),
+      });
+
+      // Set the expire date for the premium code
+      if (premium) {
+        const expires = moment(premium.expiresAt).format(
+          "dddd, MMMM Do YYYY HH:mm:ss"
+        );
+        // Once the code is expired, we delete it from the database and from the users profile
+        user.isPremium = true;
+        user.premium.redeemedBy.push({
+          id: message.author.id,
+          tag: message.author.tag,
+        });
+        user.premium.redeemedAt = Date.now();
+        user.premium.expiresAt = premium.expiresAt;
+        user.premium.plan = premium.plan;
+
+        // Save the User within the Database
+        user = await user.save({ new: true }).catch(() => {});
+        client.userSettings.set(message.author.id, user);
+        await premium.deleteOne().catch(() => {});
+
+        // Send a success message once redeemed
+        return message.reply({
+          content: `**You have successfully redeemed premium!**\n\n\`Expires at: ${expires}\``,
+        });
+
+        // Error message if the code is not valid.
+      } else {
+        return message.reply({
+          content: `**The code is invalid. Please try again using valid one!**`,
+        });
+      }
     }
   },
-});
+};
 ```
 
 if you want to make premium users list command follow this code
 
 ```js
-const { Command } = require("reconlx");
-const ee = require("../../settings/embed.json");
-const config = require("../../settings/config.json");
-const User = require("../../Models/User");
+const {
+  Message,
+  PermissionFlagsBits,
+  Client,
+  EmbedBuilder,
+} = require("discord.js");
 const moment = require("moment");
-const { Collection, MessageEmbed } = require("discord.js");
 
-module.exports = new Command({
-  // options
+module.exports = {
   name: "premiumlist",
-  description: `get list of all preimium user`,
-  userPermissions: [],
-  category: "Premium",
-  // command start
-  run: async ({ client, interaction, args }) => {
+  description: `show all premium users`,
+  userPermissions: PermissionFlagsBits.SendMessages,
+  botPermissions: PermissionFlagsBits.SendMessages,
+  category: "Owner",
+  /**
+   *
+   * @param {Client} client
+   * @param {Message} message
+   * @param {String[]} args
+   * @param {String} prefix
+   */
+  run: async (client, message, args, prefix) => {
     // Code
-    if (interaction.user.id !== "882481863661342770")
-      return interaction.followUp(`You are not my Owner`);
+    if (message.author.id !== "Owner_ID") return;
 
     let data = client.userSettings
-      .filter((data) => data.isPremium === true)
-      .map((data, index) => {
-        return ` <@${data.Id}> Expire At :- \`${moment(
-          data.premium.expiresAt
-        ).format("dddd, MMMM Do YYYY")}\` Plan :- \`${data.premium.plan}\` `;
+      .filter((data) => data?.isPremium === true)
+      .map((data) => {
+        return `<@${data.Id}> **Plan** : \`${
+          data.premium.plan
+        }\` **Expire At** :  <t:${Math.floor(
+          data.premium.expiresAt / 1000
+        )}:F> `;
       });
-    interaction.followUp({
+
+    message.reply({
       embeds: [
-        new MessageEmbed().setDescription(
-          data.join("\n") || "No Premium User Found"
-        ),
+        new EmbedBuilder()
+          .setTitle(`All Premium Users`)
+          .setColor("Blurple")
+          .setDescription(data.join("\n") || "No Premium User Found"),
       ],
     });
   },
-});
-
+};
 ```
 
 if you want to remove a user from premium list follow this code
 
 ```js
-const { Command } = require("reconlx");
-const ee = require("../../settings/embed.json");
-const config = require("../../settings/config.json");
-const moment = require("moment");
-const schema = require("../../Models/code");
-const User = require("../../Models/User");
+const { Message, PermissionFlagsBits, Client } = require("discord.js");
+const User = require("../../../Models/User");
 
-module.exports = new Command({
-  // options
+module.exports = {
   name: "rempremium",
-  description: `remove preium from user`,
-  userPermissions: [],
-  category: "Premium",
-  options: [
-    {
-      name: "user",
-      description: `mention a premium user`,
-      type: "USER",
-      required: true,
-    },
-  ],
-  // command start
-  run: async ({ client, interaction, args }) => {
+  description: `remove premium from user`,
+  userPermissions: PermissionFlagsBits.SendMessages,
+  botPermissions: PermissionFlagsBits.SendMessages,
+  category: "Owner",
+  /**
+   *
+   * @param {Client} client
+   * @param {Message} message
+   * @param {String[]} args
+   * @param {String} prefix
+   */
+  run: async (client, message, args, prefix) => {
     // Code
-    let user = interaction.options.getUser("user");
+    if (message.author.id !== "Owner_ID") return;
+    const user =
+      message.mentions.members.first() ||
+      message.guild.members.cache.get(args[0]);
+    if (!user) {
+      return message.reply({
+        content: `> Mention a User `,
+      });
+    }
     let data = client.userSettings.get(user.id);
-    if (!data.isPremium) {
-      return interaction.followUp(`${user} is Not a Premium User`);
+    if (!data?.isPremium) {
+      return message.reply({
+        content: `\`${user.user.username}\` is Not a Premium User`,
+      });
     } else {
       await User.findOneAndRemove({ Id: user.id });
       await client.userSettings.delete(user.id);
-      interaction.followUp(`${user} Removed From Premium`);
+      return message.reply({
+        content: `Premium Removed From \`${user.user.username}\``,
+      });
     }
   },
-});
-
+};
 ```
-
 
 Perfect. But as you can see, we have a Collection called `userSettings` within our Code.
 Lets add it real quick to our Project before we are trying out our new Commands.
@@ -417,51 +414,51 @@ It's necessary so the bot can separate premium users of normal users.
 
 ```js
 // Check the guide at the beginning if you don't understand paths.
+const client = require("../index");
 const User = require("../Models/User");
-const cmd = client.Commands.get(interaction.commandName);
-if (cmd) {
-  let user = client.userSettings.get(interaction.user.id);
-  // If there is no user, create it in the Database as "newUser"
-  if (!user) {
-    const findUser = await User.findOne({ Id: interaction.user.id });
-    if (!findUser) {
-      const newUser = await User.create({ Id: interaction.user.id });
-      client.userSettings.set(interaction.user.id, newUser);
-      user = newUser;
-    } else return;
-  }
 
-  if (cmd.premium && user && !user.isPremium) {
-    interaction.followUp(`You are not premium user`);
-  } else {
-    cmd.run({ client, interaction, args });
+client.on("messageCreate", async (message) => {
+  if (message.author.bot || !message.guild) return;
+  let prefix = "!";
+  let args = message.content.slice(prefix.length).trim().split(/ +/);
+  let cmd = args.shift()?.toLowerCase();
+  const command = client.mcommands.get(cmd);
+  if (!command) return;
+  if (command) {
+    let user = client.userSettings.get(message.author.id);
+    // If there is no user, create it in the Database as "newUser"
+    if (!user) {
+      const findUser = await User.findOne({ Id: message.author.id });
+      if (!findUser) {
+        const newUser = await User.create({ Id: message.author.id });
+        client.userSettings.set(message.author.id, newUser);
+        user = newUser;
+      } else return;
+    }
+    if (command.premium && user && !user.isPremium) {
+      return message.reply({
+        content: `> \`${message.author.username}\` You are Not Premium User`,
+      });
+    } else {
+      command.run(client, message, args, prefix);
+    }
   }
-}
+});
 ```
 
 Awesome. We now want the Bot define the User once going online.
 Go into your `ready.js` event. It's where the Bot is booting up.
 
 ```js
-const client = require("..");
+const client = require("../index");
 const User = require("../Models/User");
 
 client.on("ready", async () => {
-  console.log(`${client.user.username} Is Online`);
-  client.user.setActivity({
-    name: `KABIR CODING ME RIGHT NOW`,
-    type: "WATCHING",
-  });
-
-  // codde
+  console.log(`bot is ready for work !!`);
+  // premium system loader
   const users = await User.find();
-  for (let user of users) {
-    client.userSettings.set(user.Id, user);
-  }
-
-  require('../handlers/premium')(client)
+  users.forEach((user) => client.userSettings.set(user.Id, user));
 });
-
 ```
 
 Awesome. We are one step away!
@@ -473,30 +470,26 @@ Go ahead and create a file called `premium.js` within the `handlers` folder.
 The path may look like this: `src/handlers/premium.js`
 
 ```js
-// Define the User from our Database Schema
 const User = require("../Models/User");
 const cron = require("node-cron");
 
 // set the schedule, find the user in the database.
 module.exports = async (client) => {
+  console.log(`> Premium System Loaded !!`);
   cron.schedule("*/60 * * * * *", async () => {
-    await User.find({ isPremium: true }, async (err, users) => {
-      if (users && users.length) {
-        // Set the expire Date and Time for our User + Code
-        for (let user of users) {
-          if (Date.now() >= user.premium.expiresAt) {
-            // Default: The user is not a premium User
-            user.isPremium = false;
-            user.premium.redeemedBy = [];
-            user.premium.redeemedAt = null;
-            user.premium.expiresAt = null;
-            user.premium.plan = null;
-
-            // Save the updated user within the usersSettings.
-            const newUser = await user.save({ new: true }).catch(() => {});
-            client.usersSettings.set(newUser.Id, newUser);
-          }
-        }
+    const users = await User.find({ isPremium: true });
+    if (!users?.length) return;
+    users?.forEach(async (user) => {
+      if (Date.now() >= user.premium.expiresAt) {
+        // Default: The user is not a premium User
+        user.isPremium = false;
+        user.premium.redeemedBy = [];
+        user.premium.redeemedAt = null;
+        user.premium.expiresAt = null;
+        user.premium.plan = null;
+        // Save the updated user within the usersSettings.
+        const newUser = await user.save({ new: true }).catch(() => {});
+        client.usersSettings.set(newUser.Id, newUser);
       }
     });
   });
@@ -507,39 +500,44 @@ AAAAND BOOM. We are done. You have successfully setup your own Premium System fo
 Go ahead and start your Bot. Once online, run `/gencode daily`.
 
 <p align="center">
-  <a href="https://discord.gg/PcUVWApWN3" target="blank"><img src="https://media.discordapp.net/attachments/936140005900947466/939186232909496394/gencode.png" width="700" height="300" alt="Generate Code" /></a>
+  <a href="https://discord.gg/PcUVWApWN3" target="blank"><img src="https://media.discordapp.net/attachments/1007230019371802654/1063090222251913276/gencode.png" alt="Generate Code" /></a>
 </p>
 
 This will create a premium code that expires in exactly 24hours.
 Redeem the Code with `/redeem <code>`. :)
 
 <p align="center">
-  <a href="https://discord.gg/PcUVWApWN3" target="blank"><img src="https://media.discordapp.net/attachments/936140005900947466/939186233144385536/redeem.png" width="700" height="300" alt="Redeem Code" /></a>
+  <a href="https://discord.gg/PcUVWApWN3" target="blank"><img src="https://media.discordapp.net/attachments/1007230019371802654/1063090223086579762/redeem.png" alt="Redeem Code" /></a>
 </p>
 
 You might wonder, how you can strict a command down to only premium Users.
 I will show you one example, it's very easy.
 
 ```js
-const { Command } = require("reconlx");
-const { MessageEmbed } = require("discord.js");
-const ee = require("../../settings/embed.json");
-const config = require("../../settings/config.json");
+const { Message, PermissionFlagsBits, Client } = require("discord.js");
 
-module.exports = new Command({
-  // options
+module.exports = {
   name: "ping",
-  description: `Show Bot Ping`,
-  userPermissions: ["SEND_MESSAGES"],
-  category: "Information",
-  premium: true,
-  // command start
-  run: async ({ client, interaction, args }) => {
-    interaction.followUp({
-      embeds: [new MessageEmbed().setTitle(`Ping :- ${client.ws.ping}`)],
+  description: "Get Bot Real Ping !!",
+  userPermissions: PermissionFlagsBits.SendMessages,
+  botPermissions: PermissionFlagsBits.SendMessages,
+  category: "Misc",
+  cooldown: 5,
+  premium: true, // true if you want to make command premium
+  /**
+   *
+   * @param {Client} client
+   * @param {Message} message
+   * @param {String[]} args
+   * @param {String} prefix
+   */
+  run: async (client, message, args, prefix) => {
+    // Code
+    message.reply({
+      content: `> Pong \`${client.ws.ping}\``,
     });
   },
-});
+};
 ```
 
 Congrats. You now have a fully working premium system integrated.
